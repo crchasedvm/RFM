@@ -97,7 +97,7 @@
     <div class="container mx-auto p-4 md:p-8">
 
         <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-[#6D5A4D] mb-2">Retained Foetal Membranes (RFM)</h1>
+            <h1 class="text-4xl md:text-5xl font-bold text-[#0021A5] mb-2">Retained Foetal Membranes (RFM)</h1>
             <p class="text-lg text-gray-600 max-w-3xl mx-auto">An interactive guide to understanding, preventing, and managing RFM in New Zealand dairy herds.</p>
         </header>
 
@@ -165,7 +165,7 @@
                         <h3 class="text-2xl font-bold mb-4 text-center text-[#8C6A55]">Risk Factors by Group</h3>
                         <div class="flex justify-center mb-4">
                             <div class="inline-flex rounded-md shadow-sm" role="group">
-                                <button type="button" id="heiferBtn" class="px-4 py-2 text-sm font-medium text-white bg-[#8C6A55] border border-gray-200 rounded-l-lg hover:bg-[#6D5A4D]" onclick="updateComparisonChart('heifers')">
+                                <button type="button" id="heiferBtn" class="px-4 py-2 text-sm font-medium text-white bg-[#8C6A55] border border-gray-200 rounded-l-lg hover:bg-[#0021A5]" onclick="updateComparisonChart('heifers')">
                                     Heifers
                                 </button>
                                 <button type="button" id="cowBtn" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100" onclick="updateComparisonChart('cows')">
@@ -198,7 +198,7 @@
                 </div>
                 <div class="space-y-4 max-w-4xl mx-auto">
                     <div class="accordion-item bg-white rounded-lg shadow-md">
-                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-1">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#0021A5]" data-target="#acc-1">
                             <span>🐄 Transition Nutrition & Metabolic Health</span>
                             <span class="accordion-arrow transition-transform duration-300">▼</span>
                         </button>
@@ -215,7 +215,7 @@
                         </div>
                     </div>
                      <div class="accordion-item bg-white rounded-lg shadow-md">
-                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-2">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#0021A5]" data-target="#acc-2">
                             <span>🧬 Genetics & Calving Management</span>
                             <span class="accordion-arrow transition-transform duration-300">▼</span>
                         </button>
@@ -231,7 +231,7 @@
                         </div>
                     </div>
                     <div class="accordion-item bg-white rounded-lg shadow-md">
-                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-3">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#0021A5]" data-target="#acc-3">
                             <span>🏡 Environment & Hygiene</span>
                             <span class="accordion-arrow transition-transform duration-300">▼</span>
                         </button>
@@ -372,7 +372,7 @@
                     datasets: [{
                         label: 'Cost Breakdown',
                         data: chartData.economic.data,
-                        backgroundColor: ['#B0A195', '#D4C7BE', '#6D5A4D', '#8C6A55'],
+                        backgroundColor: ['#B0A195', '#D4C7BE', '#0021A5', '#8C6A55'],
                         borderColor: '#FDFBF8',
                         borderWidth: 4
                     }]
@@ -441,7 +441,7 @@
                     datasets: [{
                         label: 'Primary Risk Factors (%)',
                         data: chartData.comparison[group].data,
-                        backgroundColor: ['#8C6A55', '#B0A195', '#D4C7BE', '#6D5A4D'],
+                        backgroundColor: ['#8C6A55', '#B0A195', '#D4C7BE', '#0021A5'],
                         borderRadius: 4
                     }]
                 },
