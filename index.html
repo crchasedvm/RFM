@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFM Management Dashboard | NZ Dairy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earthy Neutrals -->
+    <!-- Application Structure Plan: A task-oriented, tab-based single-page application. The structure is designed for quick access to information based on user needs (e.g., "Why did my heifer get RFM?" or "What's the best prevention strategy?"). It abandons the report's linear flow for a more intuitive, non-linear dashboard experience. Key sections are: 1) Overview for foundational knowledge and impact, 2) Heifers vs. Cows for direct comparison of the most critical risk difference, 3) Prevention as an interactive, actionable guide, and 4) Treatment as a simple decision-making flowchart. This structure prioritizes usability and quick decision-making for a busy farm environment. -->
+    <!-- Visualization & Content Choices: 
+        - Economic Impact (Donut Chart): Goal: Inform. Method: Chart.js. Interaction: Hover for details. Justification: Quickly visualizes the primary cost drivers from the report's economic data.
+        - Incidence by Parity (Line Chart): Goal: Show Change. Method: Chart.js. Interaction: Hover for data points. Justification: Clearly demonstrates the rising risk with age, reinforcing the report's findings on multiparous cows.
+        - Heifer vs. Cow Risk Factors (Bar Chart): Goal: Compare. Method: Chart.js. Interaction: Toggling between Heifer/Cow data views. Justification: Provides a direct, powerful visual comparison of the core thesis that causes differ by parity.
+        - Gateway Disease (HTML/CSS Diagram): Goal: Show Relationships. Method: Tailwind Flexbox. Interaction: Static visual. Justification: A simple, clear infographic is more effective than text for showing the cascade of related diseases.
+        - Prevention Strategies (HTML/CSS Accordion): Goal: Organize. Method: JS-powered accordion. Interaction: Click to expand/collapse. Justification: Manages information density, presenting complex recommendations in digestible, user-initiated chunks.
+        - Treatment Protocol (HTML/CSS Flowchart): Goal: Organize/Inform. Method: Tailwind Flexbox. Interaction: Visual path. Justification: Translates the report's treatment logic into an unambiguous, easy-to-follow on-farm decision tool.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4F4641;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+        .nav-button.active {
+            border-bottom-color: #8C6A55;
+            color: #8C6A55;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .accordion-button.open .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        .flowchart-box {
+            border: 2px solid #D4C7BE;
+            background-color: #F8F5F2;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            flex-grow: 1;
+        }
+        .flowchart-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #B0A195;
+            margin: 0 1rem;
+        }
+        .flowchart-path-yes {
+            border-left: 2px dashed #5A8B5A;
+            border-bottom: 2px dashed #5A8B5A;
+            border-right: 2px dashed #5A8B5A;
+        }
+        .flowchart-path-no {
+            border-left: 2px dashed #C75B5B;
+            border-bottom: 2px dashed #C75B5B;
+            border-right: 2px dashed #C75B5B;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#6D5A4D] mb-2">Retained Foetal Membranes (RFM)</h1>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">An interactive guide to understanding, preventing, and managing RFM in New Zealand dairy herds.</p>
+        </header>
+
+        <nav class="flex justify-center border-b-2 border-gray-200 mb-8 space-x-2 md:space-x-8">
+            <button class="nav-button active py-4 px-2 md:px-6 text-sm md:text-base" onclick="showTab('overview')">Overview & Impact</button>
+            <button class="nav-button py-4 px-2 md:px-6 text-sm md:text-base" onclick="showTab('comparison')">Heifers vs. Cows</button>
+            <button class="nav-button py-4 px-2 md:px-6 text-sm md:text-base" onclick="showTab('prevention')">Prevention</button>
+            <button class="nav-button py-4 px-2 md:px-6 text-sm md:text-base" onclick="showTab('treatment')">Treatment</button>
+        </nav>
+
+        <main>
+            <div id="overview" class="tab-content active">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-[#8C6A55]">What is RFM?</h2>
+                        <p class="mb-4">Retained Foetal Membranes (RFM) is diagnosed when a cow fails to expel her placenta (afterbirth) within **24 hours** of calving. While most healthy cows pass the membranes in 3-8 hours, this delay signifies a failure in the complex physiological process of placental detachment.</p>
+                        <h3 class="font-semibold mb-2">Key Clinical Signs:</h3>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>Degenerating, foul-smelling tissue hanging from the vulva.</li>
+                            <li>In some cases, no visible tissue but a foul-smelling discharge appears days later.</li>
+                            <li>If infection becomes systemic: fever (>39.5°C), loss of appetite, and a drop in milk production.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center text-[#8C6A55]">The Economic Burden</h2>
+                        <p class="text-center mb-4">The average cost per case of RFM is estimated at **~$386 USD**, primarily due to lost production and fertility, not direct treatment costs.</p>
+                        <div class="chart-container">
+                            <canvas id="economicImpactChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold mb-4 text-center text-[#8C6A55]">The "Gateway Disease" Cascade</h2>
+                    <p class="text-center max-w-2xl mx-auto mb-6">RFM is not an isolated event. It significantly increases the risk of a cascade of other costly health issues by creating an ideal environment for uterine infections.</p>
+                    <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="p-4 bg-red-100 border-2 border-red-300 rounded-lg text-center">
+                            <h3 class="font-bold text-red-800">RFM Occurs</h3>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-400 transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="p-4 bg-orange-100 border-2 border-orange-300 rounded-lg text-center">
+                            <h3 class="font-bold text-orange-800">Metritis (Uterine Infection)</h3>
+                            <p class="text-sm text-orange-700">Up to 7x more likely</p>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-400 transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="p-3 bg-yellow-100 border-2 border-yellow-300 rounded-lg text-center">
+                                <h3 class="font-bold text-yellow-800">Ketosis & Displaced Abomasum</h3>
+                            </div>
+                             <div class="p-3 bg-blue-100 border-2 border-blue-300 rounded-lg text-center">
+                                <h3 class="font-bold text-blue-800">Impaired Fertility & Culling</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="comparison" class="tab-content">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-[#8C6A55]">Heifers vs. Cows: A Tale of Two Risks</h2>
+                    <p class="max-w-3xl mx-auto mt-2">The primary causes of RFM are fundamentally different between first-calving heifers and mature cows. Understanding this is key to targeted prevention.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-[#8C6A55]">Risk Factors by Group</h3>
+                        <div class="flex justify-center mb-4">
+                            <div class="inline-flex rounded-md shadow-sm" role="group">
+                                <button type="button" id="heiferBtn" class="px-4 py-2 text-sm font-medium text-white bg-[#8C6A55] border border-gray-200 rounded-l-lg hover:bg-[#6D5A4D]" onclick="updateComparisonChart('heifers')">
+                                    Heifers
+                                </button>
+                                <button type="button" id="cowBtn" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100" onclick="updateComparisonChart('cows')">
+                                    Cows
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container h-64 md:h-80">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                        <div id="comparison-text" class="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <h4 id="comparison-title" class="font-bold text-lg text-gray-800">Heifers (Primiparous)</h4>
+                            <p id="comparison-desc" class="text-gray-700">The main driver for RFM in heifers is **Dystocia (difficult calving)**. Their smaller frame and pelvic size make them prone to mechanical issues during birth, leading to uterine trauma and inflammation that prevents placental detachment.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-[#8C6A55]">Incidence Increases with Age</h3>
+                        <p class="text-center mb-4">The risk of RFM rises significantly as cows get older and complete more lactations, highlighting the cumulative metabolic stress.</p>
+                        <div class="chart-container">
+                            <canvas id="parityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="prevention" class="tab-content">
+                 <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-[#8C6A55]">Proactive Prevention Strategies</h2>
+                    <p class="max-w-3xl mx-auto mt-2">Prevention is the most effective and economical approach. It revolves around excellent transition cow management, starting weeks before calving.</p>
+                </div>
+                <div class="space-y-4 max-w-4xl mx-auto">
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-1">
+                            <span>🐄 Transition Nutrition & Metabolic Health</span>
+                            <span class="accordion-arrow transition-transform duration-300">▼</span>
+                        </button>
+                        <div id="acc-1" class="accordion-content">
+                            <div class="p-5 border-t border-gray-200 text-gray-700 space-y-3">
+                                <p><strong>Goal:</strong> Prevent metabolic diseases (especially milk fever) and manage energy balance.</p>
+                                <ul class="list-disc list-inside space-y-2">
+                                    <li><strong>Body Condition Score (BCS):</strong> Calve cows at a target BCS of <strong>5.0 - 5.5</strong> (1-10 scale). Dry them off at this target to avoid major changes.</li>
+                                    <li><strong>Hypocalcemia Prevention:</strong> Supplement with **Magnesium (Mg)** for 2-4 weeks pre-calving. Restrict dietary Calcium (Ca) in the springer period to activate the cow's own Ca mobilisation system.</li>
+                                    <li><strong>Energy Control:</strong> Avoid over-feeding energy ("steaming up"). Follow DairyNZ targets (e.g., ~100 MJ ME/day for a 500kg cow) to prevent fatty liver.</li>
+                                    <li><strong>Trace Elements:</strong> Ensure adequate supplementation of **Selenium, Copper, and Vitamin E**, which are crucial for immune function and often deficient in NZ pastures.</li>
+                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-2">
+                            <span>🧬 Genetics & Calving Management</span>
+                            <span class="accordion-arrow transition-transform duration-300">▼</span>
+                        </button>
+                        <div id="acc-2" class="accordion-content">
+                            <div class="p-5 border-t border-gray-200 text-gray-700 space-y-3">
+                                <p><strong>Goal:</strong> Minimise dystocia (difficult calving), especially in heifers.</p>
+                                <ul class="list-disc list-inside space-y-2">
+                                    <li><strong>Sire Selection:</strong> Use proven, high-reliability **calving ease sires** for all heifer matings. This is the most effective long-term strategy to reduce dystocia.</li>
+                                    <li><strong>Heifer Development:</strong> Ensure heifers are grown to target bodyweights and have adequate pelvic area before their first calving.</li>
+                                    <li><strong>Calving Supervision:</strong> Check springer mobs frequently (at least 2x daily) to allow for timely, hygienic intervention if a difficult birth occurs.</li>
+                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-xl text-[#6D5A4D]" data-target="#acc-3">
+                            <span>🏡 Environment & Hygiene</span>
+                            <span class="accordion-arrow transition-transform duration-300">▼</span>
+                        </button>
+                        <div id="acc-3" class="accordion-content">
+                            <div class="p-5 border-t border-gray-200 text-gray-700 space-y-3">
+                                <p><strong>Goal:</strong> Reduce environmental stress and bacterial challenge.</p>
+                                <ul class="list-disc list-inside space-y-2">
+                                    <li><strong>Clean Calving Area:</strong> Provide a clean, dry, and sheltered calving space. Avoid excessively muddy paddocks to reduce the risk of ascending infections.</li>
+                                    <li><strong>Low-Stress Environment:</strong> Minimise social stress from transport, excessive handling, or frequent pen movements pre-calving, as stress elevates immunosuppressive cortisol.</li>
+                                    <li><strong>Herd Health:</strong> Maintain a robust vaccination program against diseases like BVD and Leptospirosis that can cause placentitis and abortion.</li>
+                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="treatment" class="tab-content">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-[#8C6A55]">On-Farm Treatment Protocol</h2>
+                    <p class="max-w-3xl mx-auto mt-2">Modern treatment is conservative. The goal is to support the cow while she expels the membranes naturally, and only intervene if she becomes systemically sick.</p>
+                </div>
+                <div class="p-6 bg-white rounded-lg shadow-lg">
+                    <div class="flex flex-col items-center">
+                        <div class="flowchart-box bg-blue-100 border-blue-300">
+                            <h3 class="font-bold text-blue-800">Step 1: Cow has RFM (>24h post-calving)</h3>
+                        </div>
+                        <div class="flowchart-arrow my-2">↓</div>
+                        <div class="flowchart-box bg-yellow-100 border-yellow-300">
+                            <h3 class="font-bold text-yellow-800">Step 2: Assess the Cow</h3>
+                            <p>Is she systemically sick? (Fever ≥39.5°C, off-feed, depressed)</p>
+                        </div>
+                        
+                        <div class="w-full flex justify-center my-4">
+                            <div class="w-1/2 text-center font-bold text-red-600">NO</div>
+                            <div class="w-1/2 text-center font-bold text-green-600">YES</div>
+                        </div>
+
+                        <div class="w-full flex justify-around items-start">
+                            <div class="w-full md:w-2/5 flex flex-col items-center">
+                                <div class="w-full h-8 border-l-2 border-t-2 border-r-2 border-dashed border-red-400 rounded-t-lg"></div>
+                                <div class="flowchart-box w-full bg-red-100 border-red-300">
+                                    <h3 class="font-bold text-red-800">Conservative Monitoring</h3>
+                                    <p class="text-sm text-red-700">"Watchful Waiting". The cow is bright and eating. Most (up to 90%) will resolve on their own in 2-11 days. Trim long membranes if needed, but DO NOT PULL.</p>
+                                </div>
+                            </div>
+                            <div class="w-full md:w-2/5 flex flex-col items-center">
+                                <div class="w-full h-8 border-l-2 border-t-2 border-r-2 border-dashed border-green-400 rounded-t-lg"></div>
+                                <div class="flowchart-box w-full bg-green-100 border-green-300">
+                                    <h3 class="font-bold text-green-800">Veterinary Intervention</h3>
+                                    <p class="text-sm text-green-700">The cow is sick and needs treatment to fight systemic infection.</p>
+                                    <ul class="text-left list-disc list-inside mt-2 text-sm">
+                                        <li><strong>Systemic Antibiotics</strong> (e.g., injectable Penicillin)</li>
+                                        <li><strong>Supportive Care</strong> (e.g., NSAIDs for fever)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t-2 border-dashed pt-6">
+                        <h3 class="text-xl font-bold text-center text-red-700 mb-4">Treatments to AVOID</h3>
+                        <div class="flex flex-col md:flex-row justify-center gap-6">
+                            <div class="p-4 bg-gray-100 rounded-lg border-l-4 border-red-500">
+                                <h4 class="font-bold">❌ Manual Removal</h4>
+                                <p class="text-sm">Forcefully pulling the placenta causes uterine damage, introduces bacteria, and impairs future fertility. It is strongly discouraged.</p>
+                            </div>
+                            <div class="p-4 bg-gray-100 rounded-lg border-l-4 border-red-500">
+                                <h4 class="font-bold">❌ Intrauterine Antibiotics</h4>
+                                <p class="text-sm">Pessaries or infusions are ineffective and may actually prolong retention by interfering with the natural separation process.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let economicImpactChart, parityChart, comparisonChart;
+
+        const chartData = {
+            economic: {
+                labels: ['Reduced Milk Production', 'Impaired Fertility', 'Culling & Replacement', 'Secondary Disease Costs'],
+                data: [45, 35, 15, 5]
+            },
+            parity: {
+                labels: ['Parity 1 (Heifer)', 'Parity 2', 'Parity 3', 'Parity 4', 'Parity 5', 'Parity 6', 'Parity 7+'],
+                data: [10, 15, 22, 30, 41, 50, 57]
+            },
+            comparison: {
+                heifers: {
+                    labels: ['Dystocia', 'Metabolic', 'Infection', 'Other'],
+                    data: [70, 15, 10, 5]
+                },
+                cows: {
+                    labels: ['Metabolic', 'Dystocia', 'Twinning', 'Other'],
+                    data: [60, 20, 15, 5]
+                }
+            }
+        };
+        
+        const comparisonTextData = {
+            heifers: {
+                title: 'Heifers (Primiparous)',
+                description: 'The main driver for RFM in heifers is **Dystocia (difficult calving)**. Their smaller frame and pelvic size make them prone to mechanical issues during birth, leading to uterine trauma and inflammation that prevents placental detachment.'
+            },
+            cows: {
+                title: 'Cows (Multiparous)',
+                description: 'For mature cows, the risk shifts to **Metabolic Disease**. The immense strain of high milk production makes them susceptible to hypocalcemia (milk fever) and negative energy balance, which cripples the immune response needed for placental release.'
+            }
+        };
+
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            const buttons = document.querySelectorAll('.nav-button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+                if (button.getAttribute('onclick') === `showTab('${tabName}')`) {
+                    button.classList.add('active');
+                }
+            });
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function createEconomicImpactChart() {
+            const ctx = document.getElementById('economicImpactChart').getContext('2d');
+            if (economicImpactChart) economicImpactChart.destroy();
+            economicImpactChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.economic.labels,
+                    datasets: [{
+                        label: 'Cost Breakdown',
+                        data: chartData.economic.data,
+                        backgroundColor: ['#B0A195', '#D4C7BE', '#6D5A4D', '#8C6A55'],
+                        borderColor: '#FDFBF8',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createParityChart() {
+            const ctx = document.getElementById('parityChart').getContext('2d');
+            if (parityChart) parityChart.destroy();
+            parityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.parity.labels,
+                    datasets: [{
+                        label: 'Incidence of RFM (%)',
+                        data: chartData.parity.data,
+                        borderColor: '#8C6A55',
+                        backgroundColor: 'rgba(140, 106, 85, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Incidence (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function createComparisonChart(group = 'heifers') {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.comparison[group].labels,
+                    datasets: [{
+                        label: 'Primary Risk Factors (%)',
+                        data: chartData.comparison[group].data,
+                        backgroundColor: ['#8C6A55', '#B0A195', '#D4C7BE', '#6D5A4D'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Relative Contribution (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+        
+        function updateComparisonChart(group) {
+            const heiferBtn = document.getElementById('heiferBtn');
+            const cowBtn = document.getElementById('cowBtn');
+            
+            if (group === 'heifers') {
+                heiferBtn.classList.add('bg-[#8C6A55]', 'text-white');
+                heiferBtn.classList.remove('bg-white', 'text-gray-900');
+                cowBtn.classList.add('bg-white', 'text-gray-900');
+                cowBtn.classList.remove('bg-[#8C6A55]', 'text-white');
+            } else {
+                cowBtn.classList.add('bg-[#8C6A55]', 'text-white');
+                cowBtn.classList.remove('bg-white', 'text-gray-900');
+                heiferBtn.classList.add('bg-white', 'text-gray-900');
+                heiferBtn.classList.remove('bg-[#8C6A55]', 'text-white');
+            }
+
+            comparisonChart.data.labels = chartData.comparison[group].labels;
+            comparisonChart.data.datasets[0].data = chartData.comparison[group].data;
+            comparisonChart.update();
+            
+            document.getElementById('comparison-title').innerHTML = comparisonTextData[group].title;
+            document.getElementById('comparison-desc').innerHTML = comparisonTextData[group].description;
+        }
+
+        function setupAccordions() {
+            const accordionButtons = document.querySelectorAll('.accordion-button');
+            accordionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = document.querySelector(button.dataset.target);
+                    button.classList.toggle('open');
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            });
+        }
+
+        window.onload = function() {
+            createEconomicImpactChart();
+            createParityChart();
+            createComparisonChart('heifers');
+            setupAccordions();
+        };
+    </script>
+
+</body>
+</html>
